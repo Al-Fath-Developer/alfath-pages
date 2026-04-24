@@ -130,7 +130,7 @@ src/
 
 ```bash
 git clone <repo-url>
-cd alfath-backend
+cd backend
 ```
 
 ## 2. Install
