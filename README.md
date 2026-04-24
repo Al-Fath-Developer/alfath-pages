@@ -1,102 +1,119 @@
-# 🕌 LDK ALFATH Integrated Platform
+# LDK ALFATH Integrated Platform
 
-Platform terintegrasi untuk mendukung operasional internal dan publikasi digital LDK ALFATH di tingkat fakultas.
+## Overview
 
----
+LDK ALFATH Integrated Platform adalah sistem berbasis web yang dirancang untuk mendukung operasional organisasi dakwah kampus pada tingkat fakultas. Sistem ini bertujuan untuk mengatasi permasalahan utama seperti tidak terpusatnya data kader, kesulitan dalam monitoring pembinaan, pengelolaan program kerja yang tidak terstruktur, serta keterbatasan transparansi keuangan dan media publikasi.
 
-# 📌 Overview
-
-Sistem ini dikembangkan untuk mengatasi permasalahan utama dalam organisasi:
-
-* Data kader tidak terpusat
-* Monitoring mentoring sulit dilakukan
-* Pengelolaan proker dan task tidak terstruktur
-* Transparansi keuangan terbatas
-* Media dakwah digital belum optimal
-* Tidak adanya wadah kolaborasi
-
-Platform ini menggabungkan **internal management system** dan **public-facing features** dalam satu aplikasi.
+Platform ini mengintegrasikan kebutuhan internal organisasi dengan fitur publik, sehingga mampu berfungsi sebagai sistem manajemen sekaligus media dakwah digital.
 
 ---
 
-# 🎯 Objectives
+## Objectives
 
-* Sentralisasi database kader
-* Monitoring pembinaan berbasis mentoring
-* Efisiensi pengelolaan proker
-* Transparansi keuangan
-* Media dakwah digital
-* Fasilitasi kolaborasi
-
----
-
-# 🏗️ System Architecture
-
-## Approach
-
-* Modular Monolith (Microservice-ready)
-
-## Stack
-
-| Layer      | Technology |
-| ---------- | ---------- |
-| Frontend   | Next.js    |
-| Backend    | NestJS     |
-| Database   | PostgreSQL |
-| ORM        | Prisma     |
-| Auth       | JWT        |
-| Deployment | Docker     |
+* Menyediakan database kader terpusat
+* Mendukung monitoring pembinaan berbasis mentoring
+* Meningkatkan efisiensi pengelolaan program kerja
+* Menyediakan transparansi keuangan
+* Menjadi media publikasi dakwah
+* Memfasilitasi kolaborasi antar pengguna
 
 ---
 
-# 🧩 System Modules
+## System Architecture
 
-## Internal Modules
+### Approach
+
+Sistem dikembangkan menggunakan pendekatan modular monolith yang memungkinkan pengembangan terstruktur sekaligus memudahkan transisi ke arsitektur microservices di masa depan.
+
+### Technology Stack
+
+| Layer          | Technology           |
+| -------------- | -------------------- |
+| Frontend       | Next.js              |
+| Backend        | NestJS               |
+| Database       | PostgreSQL           |
+| ORM            | Prisma               |
+| Authentication | JSON Web Token (JWT) |
+| Deployment     | Docker               |
+
+---
+
+## System Modules
+
+### Internal Modules
 
 * Kader Management
 * Mentoring System
-* Task & Project Management
+* Task and Project Management
 * Finance (Expense Tracking)
 
-## Public Modules
+### Public Modules
 
 * Landing Page
-* CMS (Artikel Dakwah)
-* Collab Project
+* Content Management System (CMS)
+* Collaboration Project (Collab Project)
 
 ---
 
-# 🔄 Main Flows
+## Main Flows
 
-| Flow             | Deskripsi                                                |
-| ---------------- | -------------------------------------------------------- |
-| Public Access    | User mengakses landing page, artikel, dan collab project |
-| Kader Onboarding | Admin membuat dan mengelola data kader                   |
-| Mentoring        | Mentor mencatat session, attendance, dan score           |
-| Task & Proker    | Pengurus membuat project dan task                        |
-| Finance          | Input pengeluaran + approval                             |
-| CMS              | Artikel melalui proses draft → review → publish          |
-| Collab Project   | User membuat project dan menerima applicant              |
-
----
-
-# 📊 Business Rules
-
-| Kategori   | Rules                                       |
-| ---------- | ------------------------------------------- |
-| Kader      | Wajib terdaftar, 1 fakultas, multi-role     |
-| Mentoring  | Wajib, 1 group aktif, penilaian per session |
-| Levelisasi | Mula → Muda → Madya → Purna                 |
-| Task       | Harus terkait project + approval            |
-| Finance    | Wajib bukti + approval                      |
-| CMS        | Wajib moderasi                              |
-| Collab     | Open/Close + apply system                   |
+| Flow             | Description                                                                                                     |
+| ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| Public Access    | Pengguna mengakses landing page, melihat artikel dan collab project, serta dapat melakukan registrasi dan login |
+| Kader Onboarding | Admin membuat dan mengelola data kader serta melakukan assignment ke organisasi dan mentoring                   |
+| Mentoring        | Mentor membuat sesi mingguan dan mencatat kehadiran serta penilaian                                             |
+| Task and Project | Pengurus membuat project, mendistribusikan task, serta memonitor progres dan approval                           |
+| Finance          | Pengurus mencatat pengeluaran, mengunggah bukti, dan melakukan proses approval                                  |
+| CMS              | Pengguna membuat artikel, melalui proses review, kemudian dipublikasikan                                        |
+| Collab Project   | Pengguna membuat project kolaborasi, pengguna lain melakukan pendaftaran, dan owner melakukan seleksi           |
 
 ---
 
-# ⚙️ Project Structure
+## Business Rules
 
-```bash
+| Category       | Rules                                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| Kader          | Setiap kader wajib terdaftar, memiliki satu fakultas, dan dapat memiliki lebih dari satu peran          |
+| Mentoring      | Wajib diikuti oleh seluruh kader, satu kader hanya dalam satu group aktif, penilaian dilakukan per sesi |
+| Levelization   | Level terdiri dari Mula, Muda, Madya, dan Purna berdasarkan evaluasi mentoring                          |
+| Task           | Setiap task harus terkait dengan project dan dapat memerlukan approval                                  |
+| Finance        | Setiap pengeluaran wajib memiliki bukti dan melalui proses approval                                     |
+| CMS            | Semua konten harus melalui proses moderasi sebelum dipublikasikan                                       |
+| Collab Project | Project dapat dibuat oleh kader maupun publik dan memiliki sistem pendaftaran                           |
+
+---
+
+## Functional Requirements (EARS)
+
+| ID    | Requirement                                                                               |
+| ----- | ----------------------------------------------------------------------------------------- |
+| FR-01 | When an admin creates a kader, the system shall store kader data                          |
+| FR-02 | When a mentor creates a session, the system shall record attendance and score             |
+| FR-03 | When a user creates a task, the system shall require association with a project           |
+| FR-04 | When a finance entry is submitted, the system shall require proof and approval            |
+| FR-05 | When a user submits an article, the system shall require moderation before publishing     |
+| FR-06 | When a user creates a collab project, the system shall store the project with open status |
+| FR-07 | When a user applies to a collab project, the system shall record the application          |
+
+---
+
+## Non-Functional Requirements
+
+| ID     | Requirement                                                     |
+| ------ | --------------------------------------------------------------- |
+| NFR-01 | The system shall enforce role-based access control (RBAC)       |
+| NFR-02 | The system shall ensure data isolation per faculty              |
+| NFR-03 | The system shall respond within three seconds under normal load |
+| NFR-04 | The system shall support modular scalability                    |
+| NFR-05 | The system shall maintain uptime of at least 95 percent         |
+| NFR-06 | The system shall provide responsive access across devices       |
+| NFR-07 | The system shall maintain data consistency                      |
+
+---
+
+## Project Structure
+
+```
 src/
   modules/
     auth/
@@ -114,108 +131,94 @@ src/
 
 ---
 
-# 🧑‍💻 Development Environment
+## Development Environment
 
-## Recommended
-
-* OS: Linux (Fedora GNOME)
-* Node.js ≥ 18
-* Docker
+* Operating System: Linux (recommended)
+* Node.js version 18 or higher
+* Docker for containerized database
 
 ---
 
-# 🚀 Getting Started
+## Getting Started
 
-## 1. Clone
+### 1. Clone Repository
 
-```bash
-git clone <repo-url>
-cd backend
+```
+git clone <repository-url>
+cd alfath-backend
 ```
 
-## 2. Install
+### 2. Install Dependencies
 
-```bash
+```
 npm install
 ```
 
-## 3. Run Database
+### 3. Run Database (Docker)
 
-```bash
+```
 docker-compose up -d
 ```
 
-## 4. Setup ENV
+### 4. Configure Environment Variables
 
-```env
+Create `.env` file:
+
+```
 DATABASE_URL="postgresql://alfath:alfath123@localhost:5432/alfath_db"
 ```
 
-## 5. Prisma Migration
+### 5. Run Migration
 
-```bash
+```
 npx prisma migrate dev --name init
 ```
 
-## 6. Run App
+### 6. Start Application
 
-```bash
+```
 npm run start:dev
 ```
 
 ---
 
-# 🔐 Access Control
+## Access Control
 
-* Role-Based Access Control (RBAC)
-* Data isolation per fakultas
-* Mentor hanya dapat mengakses mentee
+Sistem menerapkan Role-Based Access Control (RBAC) dengan pembatasan akses berdasarkan peran dan fakultas. Data kader bersifat sensitif dan hanya dapat diakses oleh pihak yang memiliki otorisasi, termasuk pembatasan akses mentor terhadap mentee.
 
 ---
 
-# 📈 Roadmap
+## Roadmap
 
-## Phase 1 (MVP)
+### Phase 1
 
-* Auth
-* Kader
-* Mentoring
-* Task
+* Authentication
+* Kader Management
+* Mentoring System
 
-## Phase 2
+### Phase 2
 
-* Finance
+* Task and Project Management
+* Finance Module
+
+### Phase 3
+
 * CMS
-
-## Phase 3
-
 * Collab Project
-* Public features
+* Public Features
 
 ---
 
-# ⚠️ Risks
+## Risks and Mitigation
 
-| Risk                | Mitigation      |
-| ------------------- | --------------- |
-| Scope terlalu besar | Fokus MVP       |
-| User malas input    | UI sederhana    |
-| Data tidak valid    | Validasi sistem |
-
----
-
-# 💡 Vision
-
-Platform ini difokuskan untuk mendukung operasional LDK ALFATH secara terstruktur, efisien, dan terintegrasi, tanpa over-engineering, namun tetap scalable untuk pengembangan ke depan.
+| Risk                      | Mitigation                      |
+| ------------------------- | ------------------------------- |
+| Scope terlalu luas        | Fokus pada implementasi MVP     |
+| Rendahnya adopsi pengguna | Desain antarmuka yang sederhana |
+| Data tidak konsisten      | Validasi dan kontrol sistem     |
 
 ---
 
-# 📌 Notes
+## Conclusion
 
-* Fokus awal: Kader + Mentoring
-* Hindari premature microservices
-* Maintain modularity
-
----
-
-**Built for structured dakwah management and sustainable system growth.**
+Platform ini dirancang sebagai solusi terintegrasi untuk mendukung operasional LDK ALFATH secara sistematis dan efisien. Dengan menggabungkan pengelolaan kader, monitoring pembinaan, pengelolaan program kerja, serta transparansi keuangan dalam satu sistem, organisasi dapat meningkatkan kualitas manajemen secara signifikan. Penambahan fitur publik seperti CMS dan collab project memperluas fungsi sistem sebagai media dakwah dan kolaborasi. Pendekatan modular monolith memastikan pengembangan tetap terstruktur dan adaptif terhadap kebutuhan di masa depan.
