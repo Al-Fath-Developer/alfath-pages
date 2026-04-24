@@ -1,0 +1,16 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+  postgres:
+    image: postgres:15
+    container_name: alfath-db
+    environment:
+      POSTGRES_USER: alfath
+      POSTGRES_PASSWORD: alfath123
+      POSTGRES_DB: alfath_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
