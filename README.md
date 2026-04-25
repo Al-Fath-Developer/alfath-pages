@@ -1,5 +1,3 @@
-# TESTING
-
 # LDK ALFATH Integrated Platform
 
 ## Overview
