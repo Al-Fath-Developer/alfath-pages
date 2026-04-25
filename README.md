@@ -19,6 +19,14 @@ Platform ini mengintegrasikan kebutuhan internal organisasi dengan fitur publik,
 
 ---
 
+## Link Penting
+**PRD:**
+https://docs.google.com/document/d/1JwNcqe8RNZem-KKAAzJkycHhVcXKDwz3/edit?usp=sharing&ouid=117778448132774890827&rtpof=true&sd=true
+**Spesifikasi Landing Page:**
+https://docs.google.com/document/d/13DTAiYcz-D37H53-7H2WDHL3UcP-dAKI/edit?usp=sharing&ouid=117778448132774890827&rtpof=true&sd=true
+**Executive Summary:**
+ https://drive.google.com/file/d/1k0lveswNXRuJ8bpLP-fGJRH3vTOsB4k_/view?usp=sharing
+
 ## System Architecture
 
 ### Approach
