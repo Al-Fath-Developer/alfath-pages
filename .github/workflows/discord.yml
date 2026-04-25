@@ -12,15 +12,19 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      - name: Format Commit Timestamp
+        id: format_time
+        run: |
+          echo "formatted_time=$(date -d '${{ github.event.head_commit.timestamp }}' '+%d-%m-%Y %H:%M:%S WIB')" >> $GITHUB_ENV
       - name: Send Discord Notification
         uses: Ilshidur/action-discord@master
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
           args: |
-            📢 Github Event Notification
-            - Actor: ${{ github.actor }}
-            - Event: ${{ github.event_name }} - ${{ github.repository }}
-            - Commit: ${{ github.event.head_commit.message }}
-            - URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.head_commit.url }}
+            ***📢 Github Event Notification***
+            - **Actor**: ${{ github.actor }} *(${{ env.formatted_time }})*
+            - **Event**: ${{ github.event_name }} | *${{ github.repository }}*
+            - **Commit**: ${{ github.event.head_commit.message }}
+            - **URL**: ${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.head_commit.url }}
 
