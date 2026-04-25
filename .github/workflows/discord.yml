@@ -18,8 +18,9 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
           args: |
-            📢 Event: ${{ github.event_name }}
-            🔧 Repo: ${{ github.repository }}
-            👤 Actor: ${{ github.actor }}
-            📝 Commit: ${{ github.event.head_commit.message }}
-            🔗 URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.head_commit.url }}
+            📢 Github Event Notification
+            - Actor: ${{ github.actor }}
+            - Event: ${{ github.event_name }} - ${{ github.repository }}
+            - Commit: ${{ github.event.head_commit.message }}
+            - URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.head_commit.url }}
+
