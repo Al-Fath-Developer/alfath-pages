@@ -2,7 +2,7 @@ name: Discord Notifications
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]   # semua branch
   pull_request:
     types: [opened, closed, reopened]
   issues:
@@ -21,4 +21,5 @@ jobs:
             📢 Event: ${{ github.event_name }}
             🔧 Repo: ${{ github.repository }}
             👤 Actor: ${{ github.actor }}
+            📝 Commit: ${{ github.event.head_commit.message }}
             🔗 URL: ${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.head_commit.url }}
