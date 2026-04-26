@@ -16,7 +16,7 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.SPRINT_BOARD_WEBHOOK }}
         with:
           args: |
-            **📋 Sprint Board Update**
+            **📋 Sprint Board Update - ${{ github.event.action }}**
             - **Repo:** ${{ github.repository }}
             - **Actor:** ${{ github.actor }}
             - **Event:** ${{ github.event_name }}
