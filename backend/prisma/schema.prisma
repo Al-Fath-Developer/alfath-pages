@@ -44,7 +44,7 @@ enum KaderStatus {
   RESIGNED
 }
 
-enum KaderLevel {
+enum KaderLevelEnum {
   MULA
   MUDA
   MADYA
@@ -290,7 +290,7 @@ model KaderBidang {
 model KaderLevel {
   id         String     @id @default(cuid())
   userId     String     @map("user_id")
-  level      KaderLevel
+  level      KaderLevelEnum
   status     ApprovalStatus @default(PENDING)
   approvedBy String?    @map("approved_by")
   approvedAt DateTime?  @map("approved_at")
@@ -317,7 +317,7 @@ model MentoringGroup {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   faculty  Faculty?          @relation(fields: [facultyId], references: [id], onDelete: SetNull)
-  creator  User              @relation(fields: [createdBy], references: [id]) // implicit via User
+  //creator  User              @relation(fields: [createdBy], references: [id]) // implicit via User
   members  MentoringMember[]
   sessions MentoringSession[]
 

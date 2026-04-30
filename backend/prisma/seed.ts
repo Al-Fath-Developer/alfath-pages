@@ -1,7 +1,19 @@
 import { PrismaClient, UserRoleEnum, ScopeType, KaderStatus, KaderJabatan } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import * as bcrypt from 'bcrypt';
+import { config } from 'dotenv';
+import path from 'path';
 
-const prisma = new PrismaClient();
+// Load .env eksplisit — ts-node tidak otomatis baca .env
+config({ path: path.join(__dirname, '..', '.env') });
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Seeding database...');
@@ -68,23 +80,25 @@ async function main() {
     },
   });
 
-  await prisma.userRole.upsert({
-    where: {
-      userId_role_scopeType_scopeId: {
-        userId: superAdmin.id,
-        role: UserRoleEnum.SUPER_ADMIN,
-        scopeType: ScopeType.GLOBAL,
-        scopeId: null,
-      },
-    },
-    update: {},
-    create: {
+  const existingSuperAdminRole = await prisma.userRole.findFirst({
+  where: {
+    userId: superAdmin.id,
+    role: UserRoleEnum.SUPER_ADMIN,
+    scopeType: ScopeType.GLOBAL,
+    scopeId: null,
+  },
+});
+
+if (!existingSuperAdminRole) {
+  await prisma.userRole.create({
+    data: {
       userId: superAdmin.id,
       role: UserRoleEnum.SUPER_ADMIN,
       scopeType: ScopeType.GLOBAL,
       scopeId: null,
     },
   });
+}
 
   // FACULTY_ADMIN — Informatika (akun Ketua)
   const facultyAdmin = await prisma.user.upsert({
