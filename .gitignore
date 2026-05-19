@@ -1,3 +1,9 @@
+# lockfile lama backend after migrasi ke pnpm
+backend/package-lock.json
+
+# prisma generated
+backend/prisma/generated/
+
 # Logs
 logs
 *.log

@@ -1,0 +1,19 @@
+{
+  "name": "ldk-alfath",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter=./backend --filter=./frontend run dev",
+    "build": "pnpm --filter=@ldk-alfath/shared run build && pnpm --parallel --filter=./backend --filter=./frontend run build",
+    "lint": "pnpm --recursive run lint",
+    "type-check": "pnpm --recursive run type-check",
+    "clean": "pnpm --recursive run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

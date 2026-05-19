@@ -1,13 +1,667 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// =============================================================================
+// Prisma Schema ALFATH - Pages
+// Versi: PRD v1.1
+// =============================================================================
+// Catatan desain:
+// - Soft delete via deletedAt (nullable) — User, PublicUser
+// - Polymorphic via authorType/ownerType — Article, CollabProject, CollabApplication
+// - Multi-role via UserRole (scope_type + scope_id)
+// - MentoringGroup.facultyId nullable — group bisa lintas fakultas (dikelola Pusat)
+// - ActivityScore = materialized cache, di-recalculate tiap akhir bulan
+// - MutabaahEntry unique per (userId, weekStartDate)
+// - ActivityScore unique per (userId, periodMonth)
+// =============================================================================
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRoleEnum {
+  SUPER_ADMIN
+  FACULTY_ADMIN
+  MENTOR
+  KADER
+}
+
+enum ScopeType {
+  GLOBAL
+  FACULTY
+}
+
+enum KaderStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  ALUMNI
+  RESIGNED
+}
+
+enum KaderLevelEnum {
+  MULA
+  MUDA
+  MADYA
+  PURNA
+}
+
+// Jabatan struktural — bukan role sistem, field di profil User
+// Menentukan siapa yang bisa buat event absensi (PRD v1.1 §2.4)
+enum KaderJabatan {
+  INTI
+  KEPALA_BIDANG
+  PIC_PROKER
+  ANGGOTA
+}
+
+enum ApprovalStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  REJECTED
+}
+
+enum CollabProjectStatus {
+  PENDING
+  ACTIVE
+  CLOSED
+}
+
+enum AttendanceMethod {
+  QR
+  MANUAL
+}
+
+enum AttendanceStatus {
+  HADIR
+  IZIN
+  ALPA
+}
+
+enum MentoringMemberRole {
+  MENTOR
+  MENTEE
+}
+
+enum CalendarEventType {
+  MANUAL
+  MENTORING_SESSION
+  TASK_DEADLINE
+  PROKER
+  ATTENDANCE_EVENT
+}
+
+enum CalendarScopeType {
+  GLOBAL
+  FACULTY
+}
+
+enum FinanceEntryType {
+  INCOME
+  EXPENSE
+}
+
+enum FinanceEntryStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SETTLED
+}
+
+enum ArticleAuthorType {
+  USER
+  PUBLIC_USER
+}
+
+enum CollabOwnerType {
+  USER
+  PUBLIC_USER
+}
+
+enum AttendanceEventStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+// =============================================================================
+// CORE — USER & AUTH
+// =============================================================================
+
+/// Pengguna internal: KADER, MENTOR, FACULTY_ADMIN, SUPER_ADMIN
+model User {
+  id           String      @id @default(cuid())
+  name         String
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  phone        String?
+  avatarUrl    String?     @map("avatar_url")
+  nim          String?     @unique // Nomor Induk Mahasiswa
+  angkatan     Int?        // tahun masuk
+  status       KaderStatus @default(PENDING)
+  jabatan      KaderJabatan @default(ANGGOTA)
+  deletedAt    DateTime?   @map("deleted_at") // soft delete
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  roles               UserRole[]
+  kaderBidang         KaderBidang[]
+  kaderLevels         KaderLevel[]
+  mentoringMembers    MentoringMember[]
+  conductedSessions   MentoringSession[]    @relation("SessionConductor")
+  sessionAttendances  SessionAttendance[]
+  createdProkers      Proker[]              @relation("ProkerCreator")
+  assignedTasks       Task[]                @relation("TaskAssignee")
+  createdTasks        Task[]                @relation("TaskCreator")
+  approvedTasks       Task[]                @relation("TaskApprover")
+  financeEntries      FinanceEntry[]        @relation("FinanceSubmitter")
+  approvedFinances    FinanceEntry[]        @relation("FinanceApprover")
+  articles            Article[]             @relation("ArticleAuthor")
+  reviewedArticles    Article[]             @relation("ArticleReviewer")
+  collabProjects      CollabProject[]       @relation("CollabOwner")
+  collabApplications  CollabApplication[]   @relation("CollabApplicant")
+  calendarEvents      CalendarEvent[]       @relation("CalendarCreator")
+  attendanceEvents    AttendanceEvent[]     @relation("AttendanceEventCreator")
+  attendanceRecords   AttendanceRecord[]
+  mutabaahEntries     MutabaahEntry[]
+  activityScores      ActivityScore[]
+  approvedLevels      KaderLevel[]          @relation("LevelApprover")
+
+  @@map("users")
+}
+
+/// Pengguna eksternal — akses publik saja (artikel, collab project)
+model PublicUser {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  articles           Article[]           @relation("PublicArticleAuthor")
+  collabProjects     CollabProject[]     @relation("PublicCollabOwner")
+  collabApplications CollabApplication[] @relation("PublicCollabApplicant")
+
+  @@map("public_users")
+}
+
+// =============================================================================
+// RBAC — ROLE & SCOPE
+// =============================================================================
+
+/// Mendukung multi-role per user dengan scope berbeda (PRD v1.1 §2.1)
+/// scopeType GLOBAL = SUPER_ADMIN, scopeType FACULTY = scope ke facultyId tertentu
+model UserRole {
+  id        String       @id @default(cuid())
+  userId    String       @map("user_id")
+  role      UserRoleEnum
+  scopeType ScopeType    @map("scope_type")
+  scopeId   String?      @map("scope_id") // null = GLOBAL, faculty id = FACULTY scope
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  faculty Faculty? @relation(fields: [scopeId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, role, scopeType, scopeId])
+  @@map("user_roles")
+}
+
+// =============================================================================
+// ORGANISASI — FACULTY & BIDANG
+// =============================================================================
+
+model Faculty {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique // e.g. "informatika"
+  description  String?
+  primaryColor String?  @map("primary_color") // hex color untuk branding
+  logoUrl      String?  @map("logo_url")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  bidangs          Bidang[]
+  userRoles        UserRole[]
+  mentoringGroups  MentoringGroup[]
+  prokers          Proker[]
+  financeEntries   FinanceEntry[]
+  articles         Article[]
+  calendarEvents   CalendarEvent[]
+  attendanceEvents AttendanceEvent[]
+
+  @@map("faculties")
+}
+
+/// Departemen/Bidang per fakultas — Proker dibuat per bidang (PRD v1.1 §2.7)
+model Bidang {
+  id        String   @id @default(cuid())
+  name      String
+  facultyId String   @map("faculty_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  faculty      Faculty       @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  kaderBidangs KaderBidang[]
+  prokers      Proker[]
+
+  @@unique([name, facultyId])
+  @@map("bidangs")
+}
+
+/// Join table: Kader ↔ Bidang (many-to-many)
+model KaderBidang {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  bidangId String   @map("bidang_id")
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bidang Bidang @relation(fields: [bidangId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bidangId])
+  @@map("kader_bidangs")
+}
+
+// =============================================================================
+// SIKLUS HIDUP KADER — LEVEL
+// =============================================================================
+
+/// Riwayat levelisasi kader (PRD v1.1 §3.2)
+/// Setiap naik level dibuat record baru — historis tersimpan
+model KaderLevel {
+  id         String     @id @default(cuid())
+  userId     String     @map("user_id")
+  level      KaderLevelEnum
+  status     ApprovalStatus @default(PENDING)
+  approvedBy String?    @map("approved_by")
+  approvedAt DateTime?  @map("approved_at")
+  note       String?
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approver User? @relation("LevelApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  @@map("kader_levels")
+}
+
+// =============================================================================
+// MENTORING (dikelola SUPER_ADMIN / Pusat — PRD v1.1 §2.3)
+// =============================================================================
+
+/// Group mentoring lintas fakultas — facultyId nullable (PRD v1.1 §6.3)
+model MentoringGroup {
+  id        String   @id @default(cuid())
+  name      String
+  facultyId String?  @map("faculty_id") // nullable = lintas fakultas
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  faculty  Faculty?          @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+  //creator  User              @relation(fields: [createdBy], references: [id]) // implicit via User
+  members  MentoringMember[]
+  sessions MentoringSession[]
+
+  @@map("mentoring_groups")
+}
+
+model MentoringMember {
+  id      String              @id @default(cuid())
+  groupId String              @map("group_id")
+  userId  String              @map("user_id")
+  role    MentoringMemberRole
+
+  group MentoringGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("mentoring_members")
+}
+
+model MentoringSession {
+  id          String   @id @default(cuid())
+  groupId     String   @map("group_id")
+  conductedBy String   @map("conducted_by")
+  sessionDate DateTime @map("session_date")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  group       MentoringGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  conductor   User                @relation("SessionConductor", fields: [conductedBy], references: [id])
+  attendances SessionAttendance[]
+  calendarEvent CalendarEvent[]   @relation("SessionCalendar")
+
+  @@map("mentoring_sessions")
+}
+
+model SessionAttendance {
+  id        String   @id @default(cuid())
+  sessionId String   @map("session_id")
+  userId    String   @map("user_id")
+  status    AttendanceStatus
+  score     Float?   // penilaian per sesi (optional)
+  note      String?
+
+  session MentoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@map("session_attendances")
+}
+
+// =============================================================================
+// ABSENSI KEGIATAN (PRD v1.1 §2.4 — NEW v1.1)
+// =============================================================================
+
+model AttendanceEvent {
+  id          String                @id @default(cuid())
+  title       String
+  description String?
+  facultyId   String                @map("faculty_id")
+  createdBy   String                @map("created_by")
+  eventDate   DateTime              @map("event_date")
+  eventEndDate DateTime?            @map("event_end_date")
+  isQrEnabled Boolean               @default(false) @map("is_qr_enabled")
+  qrToken     String?               @unique @map("qr_token")
+  qrExpiresAt DateTime?             @map("qr_expires_at")
+  status      AttendanceEventStatus @default(DRAFT)
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  faculty       Faculty             @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  creator       User                @relation("AttendanceEventCreator", fields: [createdBy], references: [id])
+  records       AttendanceRecord[]
+  calendarEvent CalendarEvent[]     @relation("AttendanceCalendar")
+
+  @@map("attendance_events")
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  eventId    String           @map("event_id")
+  userId     String           @map("user_id")
+  method     AttendanceMethod
+  status     AttendanceStatus
+  recordedAt DateTime         @default(now()) @map("recorded_at")
+  note       String?
+
+  event AttendanceEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("attendance_records")
+}
+
+// =============================================================================
+// MUTABAAH YAUMIYAH (PRD v1.1 §2.5 — NEW v1.1)
+// =============================================================================
+
+/// Template item amalan — dikelola SUPER_ADMIN
+model MutabaahTemplate {
+  id          String   @id @default(cuid())
+  name        String   // contoh: "Shalat Subuh", "Tilawah"
+  description String?
+  maxScore    Int      @map("max_score") // skor maksimum per item
+  order       Int      @default(0) // urutan tampil
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  entryItems MutabaahEntryItem[]
+
+  @@map("mutabaah_templates")
+}
+
+/// Rekap mingguan per kader — 1 entry per kader per minggu
+model MutabaahEntry {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  weekStartDate DateTime @map("week_start_date") // selalu Senin
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MutabaahEntryItem[]
+
+  @@unique([userId, weekStartDate])
+  @@map("mutabaah_entries")
+}
+
+model MutabaahEntryItem {
+  id         String  @id @default(cuid())
+  entryId    String  @map("entry_id")
+  templateId String  @map("template_id")
+  score      Int     // skor yang diinput kader (0 – maxScore)
+  note       String?
+
+  entry    MutabaahEntry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  template MutabaahTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([entryId, templateId])
+  @@map("mutabaah_entry_items")
+}
+
+// =============================================================================
+// DASHBOARD KEAKTIFAN (PRD v1.1 §2.6 — NEW v1.1)
+// =============================================================================
+
+/// Materialized cache — di-recalculate tiap akhir bulan via cron job
+/// Formula: (absensi × 0.4) + (mutabaah × 0.4) + (task × 0.2) — PRD v1.1 §7
+model ActivityScore {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  periodMonth     String   @map("period_month") // format: YYYY-MM
+  attendanceScore Float    @default(0) @map("attendance_score") // 0–100
+  mutabaahScore   Float    @default(0) @map("mutabaah_score")   // 0–100
+  taskScore       Float    @default(0) @map("task_score")       // 0–100
+  totalScore      Float    @default(0) @map("total_score")      // weighted result
+  calculatedAt    DateTime @default(now()) @map("calculated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodMonth])
+  @@map("activity_scores")
+}
+
+// =============================================================================
+// PROKER & TASK (PRD v1.1 §2.7)
+// =============================================================================
+
+model Proker {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  bidangId    String         @map("bidang_id")
+  facultyId   String         @map("faculty_id")
+  createdBy   String         @map("created_by")
+  startDate   DateTime       @map("start_date")
+  endDate     DateTime       @map("end_date")
+  status      ApprovalStatus @default(DRAFT)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  bidang        Bidang          @relation(fields: [bidangId], references: [id], onDelete: Cascade)
+  faculty       Faculty         @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  creator       User            @relation("ProkerCreator", fields: [createdBy], references: [id])
+  tasks         Task[]
+  calendarEvent CalendarEvent[] @relation("ProkerCalendar")
+
+  @@map("prokers")
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  prokerId    String     @map("proker_id")
+  title       String
+  description String?
+  assignedTo  String?    @map("assigned_to")
+  createdBy   String     @map("created_by")
+  approvedBy  String?    @map("approved_by")
+  status      TaskStatus @default(TODO)
+  deadline    DateTime?
+  rejectionNote String?  @map("rejection_note")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  proker   Proker  @relation(fields: [prokerId], references: [id], onDelete: Cascade)
+  assignee User?   @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  creator  User    @relation("TaskCreator", fields: [createdBy], references: [id])
+  approver User?   @relation("TaskApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+  calendarEvent CalendarEvent[] @relation("TaskCalendar")
+
+  @@map("tasks")
+}
+
+// =============================================================================
+// KEUANGAN (PRD v1.1 §2.8)
+// =============================================================================
+
+model FinanceEntry {
+  id          String             @id @default(cuid())
+  facultyId   String             @map("faculty_id")
+  title       String
+  description String?
+  amount      Decimal            @db.Decimal(15, 2)
+  type        FinanceEntryType
+  proofUrl    String?            @map("proof_url")
+  submittedBy String             @map("submitted_by")
+  approvedBy  String?            @map("approved_by")
+  status      FinanceEntryStatus @default(PENDING)
+  rejectionNote String?          @map("rejection_note")
+  submittedAt DateTime           @default(now()) @map("submitted_at")
+  approvedAt  DateTime?          @map("approved_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  faculty   Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  submitter User    @relation("FinanceSubmitter", fields: [submittedBy], references: [id])
+  approver  User?   @relation("FinanceApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  @@map("finance_entries")
+}
+
+// =============================================================================
+// CMS — ARTIKEL (PRD v1.1 §2.9)
+// =============================================================================
+
+/// Polymorphic author: bisa dari User (internal) atau PublicUser (eksternal)
+model Article {
+  id          String            @id @default(cuid())
+  title       String
+  content     String            @db.Text
+  excerpt     String?
+  coverUrl    String?           @map("cover_url")
+  authorId    String            @map("author_id")
+  authorType  ArticleAuthorType @map("author_type")
+  facultyId   String?           @map("faculty_id") // null = artikel Pusat
+  status      ApprovalStatus    @default(DRAFT)
+  reviewedBy  String?           @map("reviewed_by")
+  rejectionNote String?         @map("rejection_note")
+  publishedAt DateTime?         @map("published_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  // Relasi polymorphic — join manual di query layer
+  internalAuthor User?       @relation("ArticleAuthor", fields: [authorId], references: [id], map: "article_internal_author")
+  publicAuthor   PublicUser? @relation("PublicArticleAuthor", fields: [authorId], references: [id], map: "article_public_author")
+  reviewer       User?       @relation("ArticleReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  faculty        Faculty?    @relation(fields: [facultyId], references: [id], onDelete: SetNull)
+
+  @@map("articles")
+}
+
+// =============================================================================
+// COLLAB PROJECT (PRD v1.1 §2.10)
+// =============================================================================
+
+/// Polymorphic owner: User (internal) atau PublicUser (eksternal)
+model CollabProject {
+  id          String              @id @default(cuid())
+  title       String
+  description String              @db.Text
+  ownerId     String              @map("owner_id")
+  ownerType   CollabOwnerType     @map("owner_type")
+  status      CollabProjectStatus @default(PENDING)
+  tags        String[]            @default([])
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  internalOwner User?       @relation("CollabOwner", fields: [ownerId], references: [id], map: "collab_internal_owner")
+  publicOwner   PublicUser? @relation("PublicCollabOwner", fields: [ownerId], references: [id], map: "collab_public_owner")
+  applications  CollabApplication[]
+
+  @@map("collab_projects")
+}
+
+model CollabApplication {
+  id            String          @id @default(cuid())
+  projectId     String          @map("project_id")
+  applicantId   String          @map("applicant_id")
+  applicantType CollabOwnerType @map("applicant_type")
+  status        ApprovalStatus  @default(PENDING)
+  message       String?         // pesan saat apply
+  appliedAt     DateTime        @default(now()) @map("applied_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  project          CollabProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  internalApplicant User?        @relation("CollabApplicant", fields: [applicantId], references: [id], map: "collab_app_internal")
+  publicApplicant   PublicUser?  @relation("PublicCollabApplicant", fields: [applicantId], references: [id], map: "collab_app_public")
+
+  @@unique([projectId, applicantId, applicantType])
+  @@map("collab_applications")
+}
+
+// =============================================================================
+// KALENDER DASHBOARD (PRD v1.1 §2.11)
+// =============================================================================
+
+/// Event kalender — manual (dari admin) atau otomatis (dari modul lain)
+/// sourceId merujuk ke id entitas sumber (session, task, proker, attendanceEvent)
+model CalendarEvent {
+  id          String            @id @default(cuid())
+  title       String
+  eventType   CalendarEventType @map("event_type")
+  scopeType   CalendarScopeType @map("scope_type") // GLOBAL atau FACULTY
+  scopeId     String?           @map("scope_id")   // facultyId jika scope FACULTY
+  createdBy   String            @map("created_by")
+  eventDate   DateTime          @map("event_date")
+  eventEndDate DateTime?        @map("event_end_date")
+  description String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  // Relasi ke sumber event (optional — hanya ada jika otomatis)
+  mentoringSessionId  String?   @unique @map("mentoring_session_id")
+  taskId              String?   @unique @map("task_id")
+  prokerId            String?   @unique @map("proker_id")
+  attendanceEventId   String?   @unique @map("attendance_event_id")
+
+  creator          User              @relation("CalendarCreator", fields: [createdBy], references: [id])
+  faculty          Faculty?          @relation(fields: [scopeId], references: [id], onDelete: SetNull)
+  mentoringSession MentoringSession? @relation("SessionCalendar", fields: [mentoringSessionId], references: [id], onDelete: SetNull)
+  task             Task?             @relation("TaskCalendar", fields: [taskId], references: [id], onDelete: SetNull)
+  proker           Proker?           @relation("ProkerCalendar", fields: [prokerId], references: [id], onDelete: SetNull)
+  attendanceEvent  AttendanceEvent?  @relation("AttendanceCalendar", fields: [attendanceEventId], references: [id], onDelete: SetNull)
+
+  @@map("calendar_events")
 }
