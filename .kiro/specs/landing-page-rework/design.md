@@ -47,47 +47,56 @@ Lazy loading: `next/dynamic` untuk section ≥ §3, dengan placeholder skeleton 
 
 **Tujuan naratif:** Menyapa pengunjung dengan motto sebagai pesan pertama. Dalam 5 detik, pengunjung tahu (a) ini Al-Fath, (b) ini hangat, bukan kaku, (c) ada legitimasi resmi.
 
+**Filosofi layout:** *Clear & centered.* Hindari decorative noise. Motto adalah pusat — semua elemen lain hanya pendukung.
+
 **Layout (desktop ≥ 1024px):**
 ```
 ┌───────────────────────────────────────────────────────┐
 │  [Navbar transparan]                                  │
 │                                                       │
-│        ┌─ kaligrafi watermark halus, opacity 8% ─┐    │
-│        │                                          │    │
-│   Lebih Dekat,                                          │
-│   Lebih Bersahabat.                          [eyebrow] │
-│   ─────────────                                         │
-│   Rumah pembinaan mahasiswa muslim                      │
-│   Telkom University. Terbuka untuk                      │
-│   semua yang ingin tumbuh.                              │
-│                                                         │
-│   [ Kenali Al-Fath →  ]                                 │
-│                                                         │
-│   ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄                       │
-│   UKM Resmi Tel-U  ·  DKM Syamsul 'Ulum                 │
-│   ·  Anggota FSLDK  ·  Sejak 24 Nov 2013                │
-│                                                         │
-│              [scroll indicator ↓]                       │
+│             ┌─ kaligrafi watermark center ─┐         │
+│             │  (opacity 6%, centered)       │         │
+│             │                               │         │
+│                  Lebih Dekat,                          │
+│                Lebih Bersahabat.                       │
+│                                                        │
+│       Rumah pembinaan mahasiswa muslim                 │
+│              Telkom University.                        │
+│                                                        │
+│              [ Kenali Al-Fath → ]                      │
+│                                                        │
+│                                                        │
+│      UKM Resmi Tel-U · DKM Syamsul 'Ulum               │
+│         · Anggota FSLDK · Sejak 2013                   │
+│                                                        │
 └───────────────────────────────────────────────────────┘
 ```
 
-**Layout (mobile):** stacked, text left-align, eyebrow di atas, CTA full-width, trust strip wrap 2 baris.
+**Layout (mobile):** stacked center, all text & CTA centered, trust strip wrap 2 baris dengan separator titik tengah.
 
 **Behavior:**
-- Background: gradient diagonal `cream-50 → gading` dengan radial glow `primary` opacity 6% di kanan-bawah.
-- Watermark kaligrafi *الفتح*: SVG, opacity 8%, posisi center-right, **tidak ada parallax** (terlalu busy untuk minimalist).
-- Subtle **fadeInUp** sequence saat mount: eyebrow → headline → sub → CTA → trust strip (stagger 0.1s).
-- Scroll indicator: SVG arrow + text mikro, animasi bounce halus 2s loop, hide on `prefers-reduced-motion`.
-- Navbar transition: transparent saat di hero → solid krem dengan blur saat scroll > 100px.
+- Background: gradient lembut `cream-50 → gading` (#FDF8F4 → #F5F0EB) — flat, tanpa noise overlay/radial vignette.
+- Watermark kaligrafi *الفتح*: dirender sebagai background absolute terpusat, opacity ~6%, ukuran clamp(200px, 30vw, 450px). **Tidak ada parallax**, tidak ada layering ganda.
+- Subtle **fadeInUp** sequence saat mount: headline → sub → CTA → trust strip (stagger 150ms).
+- Tidak ada scroll indicator (kontras dengan minimalisme).
+- Navbar transition: transparent saat di atas → solid krem (`#FDF8F4`/90) + backdrop-blur saat scroll > 100px.
+
+**Aturan copy hero (lock):**
+- Eyebrow **dihilangkan** — biar motto langsung jadi fokus.
+- Sub disederhanakan jadi **1 baris** (tidak 2 baris seperti versi awal): *"Rumah pembinaan mahasiswa muslim Telkom University."*
+- CTA tetap: `Kenali Al-Fath →` (link ke `/tentang`).
+- Trust strip 1 baris (responsif wrap di mobile).
 
 **Komponen:**
-- `<Hero />` (baru, replace `HeroSection.tsx`)
-- `<Button variant="primary" size="lg">` — primitive baru
-- `<TrustStrip />` — primitive baru, reusable
+- `<HeroSection />` (replace komponen lama yang dark + parallax)
+- `<Button variant="primary" size="md">` — primitive baru
+- `<TrustStrip />` — primitive baru, reusable di Footer juga
 
 **Asset:**
-- `/public/calligraphy-alfath.svg` (watermark, monoline minimal — bukan kaligrafi tebal yang sekarang)
+- Watermark kaligrafi pakai font Scheherazade New (sudah loaded). Tidak butuh asset SVG terpisah untuk sekarang.
 - Tidak ada foto. Tidak ada video.
+
+> **Catatan revisi:** Versi spec awal (left-aligned + eyebrow + scroll indicator + 2-line sub) di-superseded oleh versi *clear centered* ini per keputusan owner pada eksekusi rework. Phase 0 tetap mempertahankan primitive `Button` & `TrustStrip` agar reusable.
 
 ---
 
@@ -127,12 +136,18 @@ Lazy loading: `next/dynamic` untuk section ≥ §3, dengan placeholder skeleton 
 **Layout (mobile):** 3 card stacked vertikal, teaser card paling bawah.
 
 **Behavior:**
-- Background: `cream-50` solid.
-- Tiap card: surface `cream-100`, border `cream-200` (1px), radius 16px, padding 32px. Tanpa shadow tebal.
+- **Rounded top corner overlap:** Section ini memiliki `border-radius: 32px` di pojok kiri atas dan kanan atas, dengan `margin-top: -32px` (atau `-mt-8` Tailwind) untuk overlap visual ke Hero. Efek ini menciptakan transisi *card-rises-up* yang lembut antara hero dan section §2 — meniru pola modern landing seperti Linear, Vercel, Notion.
+- Background: `cream-100` (#F5EBD8) — sengaja **lebih warna** dibanding hero (yang `cream-50`), supaya rounded corner-nya terlihat sebagai panel terangkat.
+- Tiap card: surface `cream-50`, border `cream-200` (1px), radius 16px, padding 32px. Tanpa shadow tebal.
 - Hover (desktop): subtle lift `translateY(-2px)` + border `primary-soft`.
 - Item dalam card: 3 row, judul + meta (tanggal/lokasi).
 - Teaser card "Ruang lain sedang kami siapkan": background `primary-soft`, dashed border 1px.
 - Scroll-reveal: stagger `fadeUp` 0.08s per card.
+
+**Z-index & overlap detail:**
+- Section §2 punya `position: relative; z-index: 10` agar berada di atas hero
+- Hero punya `position: relative; z-index: 0`
+- Saat scroll, rounded corner section §2 akan terlihat "naik" dari bawah hero — bukan sekadar two flat sections.
 
 **Komponen:**
 - `<UtilitySection />` (baru)

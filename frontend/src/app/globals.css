@@ -1,60 +1,128 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
+  /* === Neutral === */
+  --color-ink: #1A0005;          /* Display & dark surface (Footer) */
+  --color-charcoal: #2A1A12;     /* Body text */
+  --color-neutral-700: #4A3A30;  /* Secondary text */
+  --color-neutral-500: #7A6A5C;  /* Tertiary text, captions */
+
+  /* === Brand Primary === */
   --color-primary: #C8102E;
   --color-primary-dark: #8B0000;
-  --color-primary-light: #F5E6E8;
-  --color-accent-yellow: #fffb00;
-  --color-bg: #FAFAFA;
-  --color-surface: #FFFFFF;
-  --color-text-primary: #1A1A1A;
-  --color-text-muted: #6B7280;
-  --color-border: #E5E7EB;
-  
+  --color-primary-soft: #FCE9EC;
+
+  /* === Cream / Putih Gading === */
+  --color-cream-50: #FBF7EF;
+  --color-cream-100: #F5EBD8;
+  --color-gading: #EFE3CC;
+  --color-cream-200: #E8D9B5;
+
+  /* === Aksen Filosofi (HEMAT pakai!) === */
+  --color-gold-soft: #C9A961;
+  --color-leaf-soft: #6B8E4E;
+
+  /* === Legacy aliases (untuk back-compat sementara) === */
+  --color-bg: #FBF7EF;
+  --color-surface: #FBF7EF;
+  --color-text-primary: #2A1A12;
+  --color-text-muted: #7A6A5C;
+  --color-border: #E8D9B5;
+
+  /* === Fonts === */
   --font-sans: 'Plus Jakarta Sans', sans-serif;
-  
-  --animate-fade-in-up: fadeInUp 0.6s ease forwards;
-  
+  --font-arabic: 'Scheherazade New', serif;
+
+  /* === Radius === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+
+  /* === Shadow (minimalist) === */
+  --shadow-soft: 0 1px 2px rgba(26, 0, 5, 0.04), 0 4px 12px rgba(26, 0, 5, 0.04);
+  --shadow-card-hover: 0 2px 4px rgba(26, 0, 5, 0.06), 0 8px 24px rgba(26, 0, 5, 0.06);
+
+  /* === Motion === */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-quick: 200ms;
+  --duration-base: 400ms;
+  --duration-slow: 700ms;
+
+  /* === Animations === */
   @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(28px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-8px); }
-  }
-  
-  @keyframes fadeInRight {
-    from { opacity: 0; transform: translateX(32px); }
-    to { opacity: 1; transform: translateX(0); }
   }
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: clip;
+    max-width: 100%;
   }
-  
+
   body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #FAFAFA;
-    color: #1A1A1A;
+    font-family: var(--font-sans);
+    background-color: var(--color-cream-50);
+    color: var(--color-charcoal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+    max-width: 100%;
   }
+
+  /* Typography defaults */
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--color-ink);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Utility classes */
+.animate-fade-up {
+  opacity: 0;
+  animation: fadeInUp 0.7s var(--ease-out-soft) forwards;
+}
+
+.animate-fade-in {
+  opacity: 0;
+  animation: fadeIn 0.6s var(--ease-out-soft) forwards;
 }
 
 .animate-float {
   animation: float 5s ease-in-out infinite;
 }
-.animate-float-delay {
-  animation: float 5s ease-in-out infinite 1.5s;
+
+.font-arabic {
+  font-family: var(--font-arabic);
 }
-.animate-fade-up {
-  opacity: 0;
-  animation: fadeInUp 0.7s ease forwards;
-}
-.animate-fade-right {
-  opacity: 0;
-  animation: fadeInRight 0.7s ease forwards;
+
+/* Selection */
+::selection {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-dark);
 }

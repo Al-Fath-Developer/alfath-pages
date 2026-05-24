@@ -1,6 +1,6 @@
 export default function TentangSection() {
   return (
-    <section id="tentang" className="py-16 md:py-24 bg-white">
+    <section id="tentang" className="scroll-mt-20 py-16 md:py-24 bg-white">
       <div className="max-w-6xl mx-auto px-4 md:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
           {/* Left Column */}

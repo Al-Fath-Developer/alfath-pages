@@ -1,13 +1,12 @@
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';
-import TentangSection from '../components/TentangSection';
-import FakultasSection from '../components/FakultasSection';
-import EventSection from '../components/EventSection';
-import ArtikelSection from '../components/ArtikelSection';
-import CollabSection from '../components/CollabSection';
-import FAQSection from '../components/FAQSection';
-import CTASection from '../components/CTASection';
-import Footer from '../components/Footer';
+import OverviewSection from '../components/sections/OverviewSection';
+import RuangSection from '../components/sections/RuangSection';
+import TraitsSection from '../components/sections/TraitsSection';
+import FakultasSection from '../components/sections/FakultasSection';
+import FinalCTA from '../components/sections/FinalCTA';
+import FAQSection from '../components/sections/FAQSection';
+import Footer from '../components/sections/Footer';
 import ScrollToTop from '../components/ScrollToTop';
 
 export default function Home() {
@@ -16,13 +15,12 @@ export default function Home() {
       <Navbar />
       <main>
         <HeroSection />
-        <TentangSection />
+        <OverviewSection />
+        <RuangSection />
+        <TraitsSection />
         <FakultasSection />
-        <EventSection />
-        <ArtikelSection />
-        <CollabSection />
+        <FinalCTA />
         <FAQSection />
-        <CTASection />
       </main>
       <ScrollToTop />
       <Footer />

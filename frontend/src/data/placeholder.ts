@@ -49,7 +49,7 @@ export const faculties: Faculty[] = [
   { id: 'rekayasa-industri', name: 'Fakultas Rekayasa Industri', shortName: 'FRI', emoji: '🏭', desc: 'Membangun komunitas islami di bidang industri' },
   { id: 'informatika', name: 'Fakultas Informatika', shortName: 'FIF', emoji: '💻', desc: 'Dakwah digital dan kajian di Fakultas Informatika', accentColor: '#fffb00' },
   { id: 'ekonomi-bisnis', name: 'Fakultas Ekonomi & Bisnis', shortName: 'FEB', emoji: '📊', desc: 'Kajian ekonomi Islam dan kewirausahaan halal' },
-  { id: 'komunikasi-ilsos', name: 'Fakultas Komunikasi & Ilmu Sosial', shortName: 'FKIS', emoji: '🗣️', desc: 'Dakwah melalui media dan komunikasi sosial' },
+  { id: 'komunikasi-ilsos', name: 'Fakultas Komunikasi & Ilmu Sosial', shortName: 'FKS', emoji: '🗣️', desc: 'Dakwah melalui media dan komunikasi sosial' },
   { id: 'industri-kreatif', name: 'Fakultas Industri Kreatif', shortName: 'FIK', emoji: '', desc: 'Seni dan kreativitas dalam bingkai Islam' },
   { id: 'ilmu-terapan', name: 'Fakultas Ilmu Terapan', shortName: 'FIT', emoji: '🔬', desc: 'Ilmu pengetahuan terapan berlandaskan nilai Islam' },
 ];
